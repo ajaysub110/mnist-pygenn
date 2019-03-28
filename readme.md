@@ -8,5 +8,5 @@ Implementation of the paper 'Unsupervised learning of digit recognition using sp
 - [x] Load and prepare MNIST data
 - [x] Create Poisson input model and input population with variable frequency
 - [x] Write simulation code
-- [ ] Add training and classification methods
+- [x] Add training and classification code
 - [ ] Obtain results and plot accuracies

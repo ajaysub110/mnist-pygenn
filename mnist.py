@@ -78,7 +78,7 @@ poisson_model = genn_model.create_custom_neuron_class(
 lif_model = genn_model.create_custom_neuron_class(
     "lif_model",
     param_names=["Tau","Erest","Vreset","Vthres","RefracPeriod"],
-    var_name_types=[(vname,"scalar") for vname in ["V","RefracTime"]],
+    var_name_types=[("V","scalar"),("RefracTime","scalar"),("SpikeNumber","unsigned int")],
     sim_code="""
     if ($(RefracTime) <= 0.0)
     {
@@ -93,6 +93,7 @@ lif_model = genn_model.create_custom_neuron_class(
     reset_code="""
     $(V) = $(Vreset);
     $(RefracTime) = $(RefracPeriod);
+    $(SpikeNumber) += 1;
     """,
     threshold_condition_code="$(RefracTime) <= 0.0 && $(V) >= $(Vthres)",
     derived_params=[
@@ -118,8 +119,8 @@ syn_model = genn_model.create_custom_postsynaptic_class(
 # STDP
 stdp_model = genn_model.create_custom_weight_update_class(
     "stdp_model",
-    param_names=["tauMinus", "gMax", "Xtar", "eta", "mu"],
-    var_name_types=[("g", "scalar")],
+    param_names=["tauMinus", "gMax", "Xtar", "mu"],
+    var_name_types=[("g", "scalar"), ("eta", "scalar")],
     pre_var_name_types=[("Xpre", "scalar")],
 
     sim_code=
@@ -172,9 +173,9 @@ print('time needed to load test set:', end - start)
 dt = 1.0
 
 # Architecture
-num_examples = 60000
+num_examples = 1000
 n_input = 784
-n_e = 400
+n_e = 100
 n_i = n_e 
 single_example_time = 350
 resting_time = 150
@@ -221,8 +222,8 @@ lif_i_params = {
     "Vthres":v_thres_i,
     "RefracPeriod":refrac_period_i
 }
-lif_e_init = {"V": v_reset_e, "RefracTime":0.0}
-lif_i_init = {"V": v_reset_i, "RefracTime":0.0}
+lif_e_init = {"V": v_reset_e, "RefracTime":0.0, "SpikeNumber":0}
+lif_i_init = {"V": v_reset_i, "RefracTime":0.0, "SpikeNumber":0}
 
 poisson_init = {
     "timeStepToSpike": single_example_time + resting_time,
@@ -231,8 +232,8 @@ poisson_init = {
 syn_e_params = {"TauG":tau_ge, "Erev":e_exc}
 syn_i_params = {"TauG":tau_gi, "Erev":e_inh}
 
-stdp_init = {"g":genn_model.init_var("Uniform",{"min":0.0, "max":g_max})}
-stdp_params = {"tauMinus": 20.0,"gMax": g_max,"Xtar":x_tar,"eta":eta,"mu":mu}
+stdp_init = {"g":genn_model.init_var("Uniform",{"min":0.0, "max":g_max}), "eta":eta}
+stdp_params = {"tauMinus": 20.0,"gMax": g_max,"Xtar":x_tar,"mu":mu}
 stdp_pre_init = {"Xpre": 0.0}
 
 # ********************************************************************************
@@ -289,3 +290,43 @@ for i in range(num_examples):
     end = time.time()
 
     print("Example", i, " Time", end-start)
+
+# ********************************************************************************
+#                      Training and Classification
+# ********************************************************************************
+print()
+print("Classifying examples")
+
+# Set eta to 0
+input_e_pop.set_var("eta",0.0)
+syn_e_pop.set_var("eta",0.0)
+syn_i_pop.set_var("eta",0.0)
+
+# Set SpikeNumber to 0
+lif_e_pop.set_var("SpikeNumber",0)
+lif_i_pop.set_var("SpikeNumber",0)
+
+spike_number_record = np.empty((n_e,10))
+
+for i in range(num_examples):
+    rates = list(training['x'][i%num_examples,:,:].reshape((n_input)) / 8. * input_intensity)
+    label = int(training['y'][i%num_examples])
+
+    poisson_pop.set_var('frequency', rates)
+    lif_e_pop.set_var("SpikeNumber",0)
+    lif_i_pop.set_var("SpikeNumber",0)
+    spike_number_view = lif_e_pop.vars["SpikeNumber"].view 
+    model.push_state_to_device(poisson_pop)
+    
+    start = time.time()
+    for j in range(single_example_time):
+        model.step_time()
+        model.pull_state_from_device(lif_e_pop)
+    print(spike_number_record.shape, spike_number_view.shape)
+    spike_number_record[:,label] += spike_number_view
+    end = time.time()
+
+    print("Example", i, " Time", end-start, " y", label)
+
+neuron_labels = np.argmax(spike_number_record,axis=1)
+print(neuron_labels)
