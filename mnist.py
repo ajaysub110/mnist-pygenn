@@ -9,7 +9,10 @@ from struct import unpack
 from pygenn import genn_model, genn_wrapper
 
 # Data path
+root_path = '/home/ajays/Desktop/mnist-pygenn'
 mnist_data_path = '/home/ajays/mnist/'
+if not os.path.exists(os.path.join(root_path,'ckpt')):
+    os.makedirs(os.path.join(root_path,'ckpt'))    
 
 # ********************************************************************************
 #                      Methods
@@ -55,6 +58,9 @@ def get_labeled_data(filename, bTrain = True):
         with open('%s.pickle' % filename, 'wb') as handle:
             pickle.dump(data, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return data
+
+def accuracy(predictions, y_list):
+    return np.sum(np.array(predictions) == np.array(y_list)) / float(len(y_list)) * 100
 
 # ********************************************************************************
 #                      Model Definitions
@@ -173,7 +179,8 @@ print('time needed to load test set:', end - start)
 dt = 1.0
 
 # Architecture
-num_examples = 1000
+num_epochs = 3
+num_examples = 40000
 n_input = 784
 n_e = 100
 n_i = n_e 
@@ -279,21 +286,35 @@ model.load()
 print("Simulating")
 
 # Simulate
-for i in range(num_examples):
-    rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8. * input_intensity)
-    poisson_pop.set_var('frequency', rates)
+for j in range(num_epochs):
+    for i in range(num_examples):
+        rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8. * input_intensity)
+        poisson_pop.set_var('frequency', rates)
 
-    model.push_state_to_device(poisson_pop)
-    start = time.time()
-    for j in range(single_example_time):
-        model.step_time()
-    end = time.time()
+        model.push_state_to_device(poisson_pop)
+        start = time.time()
+        while (time.time() - start) < (single_example_time / 1000.0):
+            model.step_time()
+        end = time.time()
 
-    print("Example", i, " Time", end-start)
+        print("Epoch: {}, Example: {}, Time: {}".format(j,i,end-start))
+
+    model.pull_state_from_device(input_e_pop)
+    model.pull_state_from_device(syn_e_pop)
+    model.pull_state_from_device(syn_i_pop)
+
+    input_e_g = input_e_pop.get_var_values("g")
+    syn_e_g = syn_e_pop.get_var_values("g")
+    syn_i_g = syn_i_pop.get_var_values("g")
+
+    np.save(os.path.join(root_path,'ckpt/epoch{}_input_e_g'.format(j)), input_e_g)
+    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_e_g'.format(j)), syn_e_g)
+    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_i_g'.format(j)), syn_i_g)
 
 # ********************************************************************************
 #                      Training and Classification
 # ********************************************************************************
+
 print()
 print("Classifying examples")
 
@@ -319,14 +340,60 @@ for i in range(num_examples):
     model.push_state_to_device(poisson_pop)
     
     start = time.time()
-    for j in range(single_example_time):
+    while (time.time() - start) < (single_example_time / 1000.0):
         model.step_time()
         model.pull_state_from_device(lif_e_pop)
-    print(spike_number_record.shape, spike_number_view.shape)
     spike_number_record[:,label] += spike_number_view
     end = time.time()
 
-    print("Example", i, " Time", end-start, " y", label)
+    print("Example: {}, Time: {}, Target: {}".format(i,end-start,label))
 
 neuron_labels = np.argmax(spike_number_record,axis=1)
+print()
+print("Neuron labels")
 print(neuron_labels)
+
+# ********************************************************************************
+#                      Evaluation on Training set
+# ********************************************************************************
+
+print()
+print()
+print("Evaluating on training set")
+
+# Set eta to 0
+input_e_pop.set_var("eta",0.0)
+syn_e_pop.set_var("eta",0.0)
+syn_i_pop.set_var("eta",0.0)
+
+# Set SpikeNumber to 0
+lif_e_pop.set_var("SpikeNumber",0)
+lif_i_pop.set_var("SpikeNumber",0)
+
+predictions = []
+y_list = list(training['y'][:num_examples].reshape((num_examples)))
+
+for i in range(num_examples):
+    digit_count = np.empty((10))
+    rates = list(training['x'][i%num_examples,:,:].reshape((n_input)) / 8. * input_intensity)
+    label = int(training['y'][i%num_examples])
+
+    poisson_pop.set_var('frequency', rates)
+    lif_e_pop.set_var("SpikeNumber",0)
+    lif_i_pop.set_var("SpikeNumber",0)
+    spike_number_view = lif_e_pop.vars["SpikeNumber"].view 
+    model.push_state_to_device(poisson_pop)
+    
+    start = time.time()
+    while (time.time() - start) < (single_example_time / 1000.0):
+        model.step_time()
+        model.pull_state_from_device(lif_e_pop)
+    end = time.time()
+
+    for i in range(n_e):
+        digit_count[neuron_labels[i]] += spike_number_view[i]
+    
+    pred = np.argmax(digit_count,axis=0)
+    predictions.append(pred)
+
+print("Accuracy: {}%".format(accuracy(predictions,y_list)))
