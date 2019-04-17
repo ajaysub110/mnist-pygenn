@@ -9,4 +9,5 @@ Implementation of the paper 'Unsupervised learning of digit recognition using sp
 - [x] Create Poisson input model and input population with variable frequency
 - [x] Write simulation code
 - [x] Add training and classification code
+- [x] Add lateral inhibition and one vs one connections
 - [ ] Obtain results and plot accuracies
