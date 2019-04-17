@@ -157,6 +157,18 @@ stdp_model = genn_model.create_custom_weight_update_class(
     is_pre_spike_time_required=True,
     is_post_spike_time_required=True)()
 
+lateral_inhibition = genn_model.create_custom_init_var_snippet_class(
+    "lateral_inhibition",
+    param_names=['weight'],
+    var_init_code="$(value)=($(id_pre)==$(id_post)) ? 0.0 : $(weight)"
+)
+
+onevsone = genn_model.create_custom_init_var_snippet_class(
+    "onevsone",
+    param_names=['weight'],
+    var_init_code="$(value)=($(id_pre)==$(id_post)) ? $(weight) : 0.0"
+)
+
 # ********************************************************************************
 #                      Data
 # ********************************************************************************
@@ -267,12 +279,13 @@ input_e_pop = model.add_synapse_population("input_e_pop","DENSE_INDIVIDUALG",res
 syn_e_pop = model.add_synapse_population("syn_e_pop","DENSE_INDIVIDUALG",genn_wrapper.NO_DELAY,
     lif_e_pop, lif_i_pop,
     stdp_model, stdp_params, stdp_init, stdp_pre_init, {},
-    syn_model, syn_e_params, {})
+    syn_model, syn_e_params, onevsone)
 
 syn_i_pop = model.add_synapse_population("syn_i_pop","DENSE_INDIVIDUALG",genn_wrapper.NO_DELAY,
     lif_i_pop, lif_e_pop,
     stdp_model, stdp_params, stdp_init, stdp_pre_init, {},
-    syn_model, syn_i_params, {})
+    syn_model, syn_i_params, lateral_inhibition)
+
 
 # ********************************************************************************
 #                      Building and Simulation
@@ -307,9 +320,9 @@ for j in range(num_epochs):
     syn_e_g = syn_e_pop.get_var_values("g")
     syn_i_g = syn_i_pop.get_var_values("g")
 
-    np.save(os.path.join(root_path,'ckpt/epoch{}_input_e_g'.format(j)), input_e_g)
-    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_e_g'.format(j)), syn_e_g)
-    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_i_g'.format(j)), syn_i_g)
+    np.save(os.path.join(root_path,'ckpt/epoch{}_input_e_g_ovo_li_1'.format(j)), input_e_g)
+    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_e_g_ovo_li_1'.format(j)), syn_e_g)
+    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_i_g_ovo_li_1'.format(j)), syn_i_g)
 
 # ********************************************************************************
 #                      Training and Classification
