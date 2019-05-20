@@ -80,9 +80,40 @@ poisson_model = genn_model.create_custom_neuron_class(
     threshold_condition_code="$(timeStepToSpike) <= 0.0"
 )()
 
-# LIF neuron model (usable for both exc and inh neurons)
-lif_model = genn_model.create_custom_neuron_class(
-    "lif_model",
+# LIF neuron model
+# excitatory neurons
+lif_e_model = genn_model.create_custom_neuron_class(
+    "lif_e_model",
+    param_names=["Tau","Erest","Vreset","Vthres","RefracPeriod","tauTheta"],
+    var_name_types=[("V","scalar"),("RefracTime","scalar"),("theta","scalar"),("SpikeNumber","unsigned int")],
+    sim_code="""
+    if ($(RefracTime) <= 0.0)
+    {
+        scalar alpha = $(Erest) + $(Isyn);
+        $(V) = ($(V) - alpha) * $(ExpTC);
+    }
+    else
+    {
+        $(RefracTime) -= DT;
+        $(theta) = $(theta) * $(ExpTtheta);
+    }
+    """,
+    reset_code="""
+    $(V) = $(Vreset);
+    $(RefracTime) = $(RefracPeriod);
+    $(SpikeNumber) += 1;
+    $(theta) += 1;
+    """,
+    threshold_condition_code="$(RefracTime) <= 0.0 && $(V) >= $(Vthres) + $(theta)",
+    derived_params=[
+        ("ExpTC", genn_model.create_dpf_class(lambda pars, dt: np.exp(-dt / pars[0]))()),
+        ("ExpTtheta", genn_model.create_dpf_class(lambda pars, dt: np.exp(-dt / pars[5]))())
+    ]
+)()
+
+# inhibitory neurons
+lif_i_model = genn_model.create_custom_neuron_class(
+    "lif_i_model",
     param_names=["Tau","Erest","Vreset","Vthres","RefracPeriod"],
     var_name_types=[("V","scalar"),("RefracTime","scalar"),("SpikeNumber","unsigned int")],
     sim_code="""
@@ -132,11 +163,6 @@ stdp_model = genn_model.create_custom_weight_update_class(
     sim_code=
         """
         $(addToInSyn, $(g));
-        const scalar dt = $(t) - $(sT_post);
-        if(dt > 0) {
-            const scalar expXpre = exp(-dt / $(tauMinus));
-            $(Xpre) *= expXpre;
-        }
         """,
 
     learn_post_code=
@@ -144,14 +170,17 @@ stdp_model = genn_model.create_custom_weight_update_class(
         const scalar dt = $(t) - $(sT_pre);
         if(dt > 0) {
             const scalar newG = $(g) - ($(eta) * ($(Xpre) - $(Xtar)) * pow(($(gMax) - $(g)),$(mu)));
-            $(g) = min($(gMax), newG);
+            $(g) = $(gMax) <= newG ? $(gMax) : newG;
         }
         """,
 
     pre_spike_code=
         """
         const scalar dt = $(t) - $(sT_pre);
-        $(Xpre) += 1.0;
+        if(dt > 0) {
+            const scalar expXpre = exp(-dt / $(tauMinus));
+            $(Xpre) = ($(Xpre) * exp(-dt / $(tauMinus))) + 1.0;
+        }
         """,
 
     is_pre_spike_time_required=True,
@@ -160,14 +189,14 @@ stdp_model = genn_model.create_custom_weight_update_class(
 lateral_inhibition = genn_model.create_custom_init_var_snippet_class(
     "lateral_inhibition",
     param_names=['weight'],
-    var_init_code="$(value)=($(id_pre)==$(id_post)) ? 0.0 : $(weight)"
-)
+    var_init_code="$(value)=($(id_pre)==$(id_post)) ? 0.0 : $(weight);"
+)()
 
 onevsone = genn_model.create_custom_init_var_snippet_class(
     "onevsone",
     param_names=['weight'],
-    var_init_code="$(value)=($(id_pre)==$(id_post)) ? $(weight) : 0.0"
-)
+    var_init_code="$(value)=($(id_pre)==$(id_post)) ? $(weight) : 0.0;"
+)()
 
 # ********************************************************************************
 #                      Data
@@ -192,7 +221,7 @@ dt = 1.0
 
 # Architecture
 num_epochs = 3
-num_examples = 40000
+num_examples = 400
 n_input = 784
 n_e = 100
 n_i = n_e 
@@ -215,6 +244,7 @@ refrac_period_e = 5.0
 refrac_period_i = 2.0
 e_exc = 1000
 e_inh = 100
+tau_theta_e = 1e7
 
 # Synapse
 tau_ge = 1
@@ -232,7 +262,8 @@ lif_e_params = {
     "Erest":e_rest_e,
     "Vreset":v_reset_e,
     "Vthres":v_thres_e,
-    "RefracPeriod":refrac_period_e
+    "RefracPeriod":refrac_period_e,
+    "tauTheta":tau_theta_e
 }
 lif_i_params = {
     "Tau":tau_i, 
@@ -241,12 +272,12 @@ lif_i_params = {
     "Vthres":v_thres_i,
     "RefracPeriod":refrac_period_i
 }
-lif_e_init = {"V": v_reset_e, "RefracTime":0.0, "SpikeNumber":0}
+lif_e_init = {"V": v_reset_e, "RefracTime":0.0, "SpikeNumber":0, "theta":0.0}
 lif_i_init = {"V": v_reset_i, "RefracTime":0.0, "SpikeNumber":0}
 
 poisson_init = {
-    "timeStepToSpike": single_example_time + resting_time,
-    "frequency": 0}
+    "timeStepToSpike": 0.0,
+    "frequency": 0.0}
 
 syn_e_params = {"TauG":tau_ge, "Erev":e_exc}
 syn_i_params = {"TauG":tau_gi, "Erev":e_inh}
@@ -255,6 +286,9 @@ stdp_init = {"g":genn_model.init_var("Uniform",{"min":0.0, "max":g_max}), "eta":
 stdp_params = {"tauMinus": 20.0,"gMax": g_max,"Xtar":x_tar,"mu":mu}
 stdp_pre_init = {"Xpre": 0.0}
 
+syn_e_init = {"g":genn_model.init_var(onevsone,{"weight":-77.0})}
+syn_i_init = {"g":genn_model.init_var(lateral_inhibition,{"weight":-77.0})}
+
 # ********************************************************************************
 #                      Model Instances
 # ********************************************************************************
@@ -262,29 +296,29 @@ stdp_pre_init = {"Xpre": 0.0}
 model = genn_model.GeNNModel("float","mnist")
 model.dT = dt
 
-model.default_var_mode = genn_wrapper.VarMode_LOC_HOST_DEVICE_INIT_DEVICE
+# model.default_var_mode = genn_wrapper.VarMode_LOC_HOST_DEVICE_INIT_DEVICE
 
 # Neuron populations
 poisson_pop = model.add_neuron_population("poisson_pop",n_input,poisson_model,{},poisson_init)
 
-lif_e_pop = model.add_neuron_population("lif_e_pop",n_e,lif_model,lif_e_params,lif_e_init)
+lif_e_pop = model.add_neuron_population("lif_e_pop",n_e,lif_e_model,lif_e_params,lif_e_init)
 
-lif_i_pop = model.add_neuron_population("lif_i_pop",n_i,lif_model,lif_i_params,lif_i_init)
+lif_i_pop = model.add_neuron_population("lif_i_pop",n_i,lif_i_model,lif_i_params,lif_i_init)
 
-input_e_pop = model.add_synapse_population("input_e_pop","DENSE_INDIVIDUALG",resting_time,
+input_e_pop = model.add_synapse_population("input_e_pop","DENSE_INDIVIDUALG",genn_wrapper.NO_DELAY,
     poisson_pop, lif_e_pop,
     stdp_model, stdp_params, stdp_init, stdp_pre_init, {},
     syn_model, syn_e_params, {})
 
-syn_e_pop = model.add_synapse_population("syn_e_pop","DENSE_INDIVIDUALG",genn_wrapper.NO_DELAY,
+syn_e_pop = model.add_synapse_population("syn_e_pop","SPARSE_INDIVIDUALG",genn_wrapper.NO_DELAY,
     lif_e_pop, lif_i_pop,
-    stdp_model, stdp_params, stdp_init, stdp_pre_init, {},
-    syn_model, syn_e_params, onevsone)
+    "StaticPulse", {}, {"g":genn_model.init_var("Uniform",{"min":0.0, "max":g_max})}, {}, {},
+    syn_model, syn_e_params, syn_e_init, genn_model.init_connectivity("OneToOne",{}))
 
 syn_i_pop = model.add_synapse_population("syn_i_pop","DENSE_INDIVIDUALG",genn_wrapper.NO_DELAY,
     lif_i_pop, lif_e_pop,
-    stdp_model, stdp_params, stdp_init, stdp_pre_init, {},
-    syn_model, syn_i_params, lateral_inhibition)
+    "StaticPulse", {}, {"g":genn_model.init_var("Uniform",{"min":0.0, "max":-g_max})}, {}, {},
+    syn_model, syn_i_params, syn_i_init)
 
 
 # ********************************************************************************
@@ -301,28 +335,27 @@ print("Simulating")
 # Simulate
 for j in range(num_epochs):
     for i in range(num_examples):
-        rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8. * input_intensity)
+        rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8000. * input_intensity)
         poisson_pop.set_var('frequency', rates)
+        poisson_pop.set_var('timeStepToSpike',0.0)
 
-        model.push_state_to_device(poisson_pop)
-        start = time.time()
-        while (time.time() - start) < (single_example_time / 1000.0):
+        model.push_state_to_device("poisson_pop")
+        while model.t < single_example_time:
             model.step_time()
-        end = time.time()
 
-        print("Epoch: {}, Example: {}, Time: {}".format(j,i,end-start))
+        print("Epoch: {}, Example: {}".format(j,i))
 
-    model.pull_state_from_device(input_e_pop)
-    model.pull_state_from_device(syn_e_pop)
-    model.pull_state_from_device(syn_i_pop)
+    # model.pull_state_from_device(input_e_pop)
+    # model.pull_state_from_device(syn_e_pop)
+    # model.pull_state_from_device(syn_i_pop)
 
-    input_e_g = input_e_pop.get_var_values("g")
-    syn_e_g = syn_e_pop.get_var_values("g")
-    syn_i_g = syn_i_pop.get_var_values("g")
+    # input_e_g = input_e_pop.get_var_values("g")
+    # syn_e_g = syn_e_pop.get_var_values("g")
+    # syn_i_g = syn_i_pop.get_var_values("g")
 
-    np.save(os.path.join(root_path,'ckpt/epoch{}_input_e_g_ovo_li_1'.format(j)), input_e_g)
-    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_e_g_ovo_li_1'.format(j)), syn_e_g)
-    np.save(os.path.join(root_path,'ckpt/epoch{}_syn_i_g_ovo_li_1'.format(j)), syn_i_g)
+    # np.save(os.path.join(root_path,'ckpt/epoch{}_input_e_g_ovo_li_1'.format(j)), input_e_g)
+    # np.save(os.path.join(root_path,'ckpt/epoch{}_syn_e_g_ovo_li_1'.format(j)), syn_e_g)
+    # np.save(os.path.join(root_path,'ckpt/epoch{}_syn_i_g_ovo_li_1'.format(j)), syn_i_g)
 
 # ********************************************************************************
 #                      Training and Classification
@@ -333,8 +366,8 @@ print("Classifying examples")
 
 # Set eta to 0
 input_e_pop.set_var("eta",0.0)
-syn_e_pop.set_var("eta",0.0)
-syn_i_pop.set_var("eta",0.0)
+# syn_e_pop.set_var("eta",0.0)
+# syn_i_pop.set_var("eta",0.0)
 
 # Set SpikeNumber to 0
 lif_e_pop.set_var("SpikeNumber",0)
@@ -343,23 +376,22 @@ lif_i_pop.set_var("SpikeNumber",0)
 spike_number_record = np.empty((n_e,10))
 
 for i in range(num_examples):
-    rates = list(training['x'][i%num_examples,:,:].reshape((n_input)) / 8. * input_intensity)
+    rates = list(training['x'][i%num_examples,:,:].reshape((n_input)) / 8000. * input_intensity)
     label = int(training['y'][i%num_examples])
 
     poisson_pop.set_var('frequency', rates)
+    poisson_pop.set_var('timeStepToSpike',0.0)
     lif_e_pop.set_var("SpikeNumber",0)
     lif_i_pop.set_var("SpikeNumber",0)
     spike_number_view = lif_e_pop.vars["SpikeNumber"].view 
-    model.push_state_to_device(poisson_pop)
+    model.push_state_to_device("poisson_pop")
     
-    start = time.time()
-    while (time.time() - start) < (single_example_time / 1000.0):
+    while model.t < single_example_time:
         model.step_time()
         model.pull_state_from_device(lif_e_pop)
     spike_number_record[:,label] += spike_number_view
-    end = time.time()
 
-    print("Example: {}, Time: {}, Target: {}".format(i,end-start,label))
+    print("Example: {}, Target: {}".format(i,label))
 
 neuron_labels = np.argmax(spike_number_record,axis=1)
 print()
@@ -376,33 +408,36 @@ print("Evaluating on training set")
 
 # Set eta to 0
 input_e_pop.set_var("eta",0.0)
-syn_e_pop.set_var("eta",0.0)
-syn_i_pop.set_var("eta",0.0)
+# syn_e_pop.set_var("eta",0.0)
+# syn_i_pop.set_var("eta",0.0)
 
 # Set SpikeNumber to 0
 lif_e_pop.set_var("SpikeNumber",0)
 lif_i_pop.set_var("SpikeNumber",0)
+model.push_state_to_device("lif_e_pop")
+model.push_state_to_device("lif_i_pop")
 
 predictions = []
 y_list = list(training['y'][:num_examples].reshape((num_examples)))
 
 for i in range(num_examples):
     digit_count = np.empty((10))
-    rates = list(training['x'][i%num_examples,:,:].reshape((n_input)) / 8. * input_intensity)
+    rates = list(training['x'][i%num_examples,:,:].reshape((n_input)) / 8000. * input_intensity)
     label = int(training['y'][i%num_examples])
 
     poisson_pop.set_var('frequency', rates)
+    poisson_pop.set_var('timeStepToSpike',0.0)
     lif_e_pop.set_var("SpikeNumber",0)
+    model.push_state_to_device("lif_e_pop")
     lif_i_pop.set_var("SpikeNumber",0)
+    model.push_state_to_device("lif_i_pop")
     spike_number_view = lif_e_pop.vars["SpikeNumber"].view 
-    model.push_state_to_device(poisson_pop)
+    model.push_state_to_device("poisson_pop")
     
-    start = time.time()
-    while (time.time() - start) < (single_example_time / 1000.0):
+    while model.t < single_example_time:
         model.step_time()
-        model.pull_state_from_device(lif_e_pop)
-    end = time.time()
-
+        model.pull_state_from_device(input_e_pop)
+    
     for i in range(n_e):
         digit_count[neuron_labels[i]] += spike_number_view[i]
     
