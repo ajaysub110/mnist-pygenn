@@ -73,7 +73,7 @@ poisson_model = genn_model.create_custom_neuron_class(
     sim_code="""
     if($(timeStepToSpike) <= 0.0f) 
     {
-        $(timeStepToSpike) += $(gennrand_exponential) / $(frequency);
+        $(timeStepToSpike) += 1.0 / $(frequency);
     }
     $(timeStepToSpike) -= 1.0;
     """,
@@ -220,15 +220,15 @@ print('time needed to load test set:', end - start)
 dt = 1.0
 
 # Architecture
-num_epochs = 3
-num_examples = 400
+num_epochs = 10
+num_examples = 200
 n_input = 784
 n_e = 100
-n_i = n_e 
+n_i = n_e
 single_example_time = 350
 resting_time = 150
 runtime = num_examples * (single_example_time + resting_time)
-input_intensity = 2. 
+input_intensity = 2.
 start_input_intensity = input_intensity
 
 # Neuron
@@ -251,10 +251,10 @@ tau_ge = 1
 tau_gi = 2
 
 # STDP
-g_max = 0.01
-x_tar = 0.1
-eta = 0.01
-mu = 1
+g_max = 10.0
+x_tar = 0.002
+eta = 0.001
+mu = 0.5
 
 # Group up parameters
 lif_e_params = {
@@ -286,8 +286,8 @@ stdp_init = {"g":genn_model.init_var("Uniform",{"min":0.0, "max":g_max}), "eta":
 stdp_params = {"tauMinus": 20.0,"gMax": g_max,"Xtar":x_tar,"mu":mu}
 stdp_pre_init = {"Xpre": 0.0}
 
-syn_e_init = {"g":genn_model.init_var(onevsone,{"weight":-77.0})}
-syn_i_init = {"g":genn_model.init_var(lateral_inhibition,{"weight":-77.0})}
+syn_e_init = {"g":genn_model.init_var(onevsone,{"weight":np.random.uniform(0.0,g_max)})}
+syn_i_init = {"g":genn_model.init_var(lateral_inhibition,{"weight":np.random.uniform(0.0,-g_max)})}
 
 # ********************************************************************************
 #                      Model Instances
@@ -333,30 +333,37 @@ model.load()
 print("Simulating")
 
 # Simulate
-for j in range(num_epochs):
-    for i in range(num_examples):
+weight_initial = input_e_pop.get_var_values("g")
+lif_e_pop.set_var("SpikeNumber",0)
+lif_i_pop.set_var("SpikeNumber",0)
+
+# print(spike_number_view)
+i=0
+spike_number_record = np.zeros((n_e))
+spike_number_view = lif_e_pop.vars["SpikeNumber"].view
+rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8000. * input_intensity)
+while model.t < runtime * num_epochs:
+    # print(rates)
+    # model.push_state_to_device("poisson_pop")
+    model.step_time()
+    # print(spike_number_view)
+    # print()
+    if model.t >= (single_example_time + resting_time) * (i+1):
+        print("Example: {}".format(i))
+        i += 1
         rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8000. * input_intensity)
         poisson_pop.set_var('frequency', rates)
         poisson_pop.set_var('timeStepToSpike',0.0)
+        # print(spike_number_view)
 
-        model.push_state_to_device("poisson_pop")
-        while model.t < single_example_time:
-            model.step_time()
+weight_final = input_e_pop.get_var_values("g")
+print(weight_initial[:20])
+print(weight_final[:20])
 
-        print("Epoch: {}, Example: {}".format(j,i))
-
-    # model.pull_state_from_device(input_e_pop)
-    # model.pull_state_from_device(syn_e_pop)
-    # model.pull_state_from_device(syn_i_pop)
-
-    # input_e_g = input_e_pop.get_var_values("g")
-    # syn_e_g = syn_e_pop.get_var_values("g")
-    # syn_i_g = syn_i_pop.get_var_values("g")
-
-    # np.save(os.path.join(root_path,'ckpt/epoch{}_input_e_g_ovo_li_1'.format(j)), input_e_g)
-    # np.save(os.path.join(root_path,'ckpt/epoch{}_syn_e_g_ovo_li_1'.format(j)), syn_e_g)
-    # np.save(os.path.join(root_path,'ckpt/epoch{}_syn_i_g_ovo_li_1'.format(j)), syn_i_g)
-
+'''
+- All excitatory neurons spike the same number of times since its an all to all connection
+'''
+        
 # ********************************************************************************
 #                      Training and Classification
 # ********************************************************************************
@@ -366,50 +373,55 @@ print("Classifying examples")
 
 # Set eta to 0
 input_e_pop.set_var("eta",0.0)
-# syn_e_pop.set_var("eta",0.0)
-# syn_i_pop.set_var("eta",0.0)
 
 # Set SpikeNumber to 0
 lif_e_pop.set_var("SpikeNumber",0)
 lif_i_pop.set_var("SpikeNumber",0)
 
-spike_number_record = np.empty((n_e,10))
+spike_number_record = np.zeros((n_e,10))
 
-for i in range(num_examples):
-    rates = list(training['x'][i%num_examples,:,:].reshape((n_input)) / 8000. * input_intensity)
-    label = int(training['y'][i%num_examples])
+i=0
+old_spike_number = np.zeros((n_e))
+spike_number_record = np.zeros((n_e,10))
+# spike_number_view = lif_e_pop.vars["SpikeNumber"].view
+rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8000. * input_intensity)
+label = int(training['y'][i%num_examples])
+current_t = model.t
+while model.t < current_t + runtime:
+    model.step_time()
+    if model.t >= current_t + (single_example_time + resting_time) * (i+1):
+        spike_number_view = lif_e_pop.vars["SpikeNumber"].view
+        # print(spike_number_view)
+        # print(current_spike_number - old_spike_number)
+        spike_number_record[:,label] += spike_number_view
+        lif_e_pop.set_var("SpikeNumber",0)
+        print(spike_number_record)
+        print("Example: {} Label: {}".format(i,label))
+        i += 1
+        rates = list(training['x'][i%60000,:,:].reshape((n_input)) / 8000. * input_intensity)
+        label = int(training['y'][i%num_examples])
+        poisson_pop.set_var('frequency', rates)
+        poisson_pop.set_var('timeStepToSpike',0.0)
+        lif_e_pop.set_var("SpikeNumber",0)
+        lif_i_pop.set_var("SpikeNumber",0)
 
-    poisson_pop.set_var('frequency', rates)
-    poisson_pop.set_var('timeStepToSpike',0.0)
-    lif_e_pop.set_var("SpikeNumber",0)
-    lif_i_pop.set_var("SpikeNumber",0)
-    spike_number_view = lif_e_pop.vars["SpikeNumber"].view 
-    model.push_state_to_device("poisson_pop")
-    
-    while model.t < single_example_time:
-        model.step_time()
-        model.pull_state_from_device(lif_e_pop)
-    spike_number_record[:,label] += spike_number_view
-
-    print("Example: {}, Target: {}".format(i,label))
 
 neuron_labels = np.argmax(spike_number_record,axis=1)
 print()
 print("Neuron labels")
 print(neuron_labels)
+# print(spike_number_record)
 
 # ********************************************************************************
 #                      Evaluation on Training set
 # ********************************************************************************
-
+"""
 print()
 print()
 print("Evaluating on training set")
 
 # Set eta to 0
 input_e_pop.set_var("eta",0.0)
-# syn_e_pop.set_var("eta",0.0)
-# syn_i_pop.set_var("eta",0.0)
 
 # Set SpikeNumber to 0
 lif_e_pop.set_var("SpikeNumber",0)
@@ -437,11 +449,16 @@ for i in range(num_examples):
     while model.t < single_example_time:
         model.step_time()
         model.pull_state_from_device(input_e_pop)
+        model.pull_state_from_device(lif_e_pop)
     
-    for i in range(n_e):
-        digit_count[neuron_labels[i]] += spike_number_view[i]
+    for j in range(n_e):
+        # print(spike_number_view[j])
+        digit_count[neuron_labels[j]] += spike_number_view[j]
     
     pred = np.argmax(digit_count,axis=0)
     predictions.append(pred)
 
+# print(predictions[:50])
+# print(y_list[:50])
 print("Accuracy: {}%".format(accuracy(predictions,y_list)))
+"""

@@ -1,0 +1,28 @@
+PRODUCTS
+
+1)  Dashboards
+    |_ LT ops
+        |_ Used only for B2C (Earlier also used for B2B)
+        |_ Driver assignment
+        |_ Task acceptance
+        |_ Driver can update status
+    |_ FO
+        |_ Also available as webview in FO app
+        |_ Record attendance
+        |_ Upload trip sheets - Trip sheets should be received everyday, but they generally arrive at end of month
+            |_ trip sheet -> field ops database -> convert file type -> finance team
+        |_ Manage Ad-Hoc bookings (Driver paid next day) by OPM
+        |_ OPM can finalize FO on previous evening
+        |_ Pricing dashboard
+            |_ pricing for clients
+            |_ pricing for driver
+        |_ Pricing attribute estimates
+            |_ can view estimated revenue - calculated by using average tripsheets values
+
+2) Customer App/Website
+    |_ Used for On Demand requests
+    |_ Most customers prefer the website
+    |_ App
+        |_Choose place and truck type in map API -> truck arrives -> move currency from bank to wallet -> 
+    |_ Website                              |
+        |_ Choose place -> Book your truck --

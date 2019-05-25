@@ -50,8 +50,8 @@ void updateSynapses(float t) {
                 
                 const scalar dt = t - (1.00000000000000000e+00f + sTpoisson_pop[i]);
                 if(dt > 0) {
-                    const scalar newG = ginput_e_pop[((100 * i) + spike)] - (etainput_e_pop[((100 * i) + spike)] * (Xpreinput_e_pop[i] - (1.00000000000000006e-01f)) * powf(((1.00000000000000002e-02f) - ginput_e_pop[((100 * i) + spike)]),(1.00000000000000000e+00f)));
-                    ginput_e_pop[((100 * i) + spike)] = (1.00000000000000002e-02f) <= newG ? (1.00000000000000002e-02f) : newG;
+                    const scalar newG = ginput_e_pop[((100 * i) + spike)] - (etainput_e_pop[((100 * i) + spike)] * (Xpreinput_e_pop[i] - (2.00000000000000004e-03f)) * powf(((1.00000000000000000e+01f) - ginput_e_pop[((100 * i) + spike)]),(5.00000000000000000e-01f)));
+                    ginput_e_pop[((100 * i) + spike)] = (1.00000000000000000e+01f) <= newG ? (1.00000000000000000e+01f) : newG;
                 }
             }
         }

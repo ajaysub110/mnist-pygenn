@@ -113,13 +113,13 @@ void initialize() {
         for(unsigned int i = 0; i < 784; i++) {
              {
                 for (unsigned j = 0; j < 100; j++) {
-                    const scalar scale = (1.00000000000000002e-02f) - (0.00000000000000000e+00f);
+                    const scalar scale = (1.00000000000000000e+01f) - (0.00000000000000000e+00f);
                     ginput_e_pop[(i * 100) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
                 }
             }
              {
                 for (unsigned j = 0; j < 100; j++) {
-                    etainput_e_pop[(i * 100) + j] = (1.00000000000000002e-02f);
+                    etainput_e_pop[(i * 100) + j] = (1.00000000000000002e-03f);
                 }
             }
         }
@@ -129,7 +129,7 @@ void initialize() {
         for(unsigned int i = 0; i < 100; i++) {
              {
                 for (unsigned j = 0; j < 100; j++) {
-                    const scalar scale = (-1.00000000000000002e-02f) - (0.00000000000000000e+00f);
+                    const scalar scale = (-1.00000000000000000e+01f) - (0.00000000000000000e+00f);
                     gsyn_i_pop[(i * 100) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
                 }
             }
@@ -158,7 +158,7 @@ void initializeSparse() {
          {
              {
                 for (unsigned j = 0; j < rowLengthsyn_e_pop[i]; j++) {
-                    const scalar scale = (1.00000000000000002e-02f) - (0.00000000000000000e+00f);
+                    const scalar scale = (1.00000000000000000e+01f) - (0.00000000000000000e+00f);
                     gsyn_e_pop[(i * 1) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
                 }
             }

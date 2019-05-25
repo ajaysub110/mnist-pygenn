@@ -131,7 +131,7 @@ void updateNeurons(float t) {
             
             if(ltimeStepToSpike <= 0.0f) 
             {
-                ltimeStepToSpike += standardExponentialDistribution(rng) / lfrequency;
+                ltimeStepToSpike += 1.0f / lfrequency;
             }
             ltimeStepToSpike -= 1.0f;
             
