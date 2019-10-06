@@ -42,31 +42,31 @@ unsigned int* SpikeNumberlif_i_pop;
 unsigned int* glbSpkCntpoisson_pop;
 unsigned int* glbSpkpoisson_pop;
 float* sTpoisson_pop;
+scalar* ratepoisson_pop;
 scalar* timeStepToSpikepoisson_pop;
-scalar* frequencypoisson_pop;
 
 // ------------------------------------------------------------------------
 // postsynaptic variables
 // ------------------------------------------------------------------------
-float* inSynsyn_i_pop;
-float* inSyninput_e_pop;
-float* inSynsyn_e_pop;
+float* inSynsyn_ie_pop;
+float* inSynsyn_pe_pop;
+float* inSynsyn_ei_pop;
 
 // ------------------------------------------------------------------------
 // synapse connectivity
 // ------------------------------------------------------------------------
-const unsigned int maxRowLengthsyn_e_pop = 1;
-unsigned int* rowLengthsyn_e_pop;
-unsigned int* indsyn_e_pop;
+const unsigned int maxRowLengthsyn_ei_pop = 1;
+unsigned int* rowLengthsyn_ei_pop;
+unsigned int* indsyn_ei_pop;
 
 // ------------------------------------------------------------------------
 // synapse variables
 // ------------------------------------------------------------------------
-scalar* ginput_e_pop;
-scalar* etainput_e_pop;
-scalar* Xpreinput_e_pop;
-scalar* gsyn_e_pop;
-scalar* gsyn_i_pop;
+scalar* gsyn_ei_pop;
+scalar* gsyn_ie_pop;
+scalar* gsyn_pe_pop;
+scalar* etasyn_pe_pop;
+scalar* Xpresyn_pe_pop;
 
 }  // extern "C"
 // ------------------------------------------------------------------------
@@ -134,59 +134,59 @@ void pushpoisson_popCurrentSpikesToDevice(bool uninitialisedOnly) {
 void pushpoisson_popSpikeTimesToDevice(bool uninitialisedOnly) {
 }
 
+void pushratepoisson_popToDevice(bool uninitialisedOnly) {
+}
+
 void pushtimeStepToSpikepoisson_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushfrequencypoisson_popToDevice(bool uninitialisedOnly) {
-}
-
 void pushpoisson_popStateToDevice(bool uninitialisedOnly) {
+    pushratepoisson_popToDevice(uninitialisedOnly);
     pushtimeStepToSpikepoisson_popToDevice(uninitialisedOnly);
-    pushfrequencypoisson_popToDevice(uninitialisedOnly);
 }
 
-void pushsyn_e_popConnectivityToDevice(bool uninitialisedOnly) {
+void pushsyn_ei_popConnectivityToDevice(bool uninitialisedOnly) {
 }
 
-void pushginput_e_popToDevice(bool uninitialisedOnly) {
+void pushgsyn_ei_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushetainput_e_popToDevice(bool uninitialisedOnly) {
+void pushinSynsyn_ei_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushXpreinput_e_popToDevice(bool uninitialisedOnly) {
+void pushsyn_ei_popStateToDevice(bool uninitialisedOnly) {
+    pushgsyn_ei_popToDevice(uninitialisedOnly);
+    pushinSynsyn_ei_popToDevice(uninitialisedOnly);
 }
 
-void pushinSyninput_e_popToDevice(bool uninitialisedOnly) {
+void pushgsyn_ie_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushinput_e_popStateToDevice(bool uninitialisedOnly) {
-    pushginput_e_popToDevice(uninitialisedOnly);
-    pushetainput_e_popToDevice(uninitialisedOnly);
-    pushXpreinput_e_popToDevice(uninitialisedOnly);
-    pushinSyninput_e_popToDevice(uninitialisedOnly);
+void pushinSynsyn_ie_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushgsyn_e_popToDevice(bool uninitialisedOnly) {
+void pushsyn_ie_popStateToDevice(bool uninitialisedOnly) {
+    pushgsyn_ie_popToDevice(uninitialisedOnly);
+    pushinSynsyn_ie_popToDevice(uninitialisedOnly);
 }
 
-void pushinSynsyn_e_popToDevice(bool uninitialisedOnly) {
+void pushgsyn_pe_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushsyn_e_popStateToDevice(bool uninitialisedOnly) {
-    pushgsyn_e_popToDevice(uninitialisedOnly);
-    pushinSynsyn_e_popToDevice(uninitialisedOnly);
+void pushetasyn_pe_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushgsyn_i_popToDevice(bool uninitialisedOnly) {
+void pushXpresyn_pe_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushinSynsyn_i_popToDevice(bool uninitialisedOnly) {
+void pushinSynsyn_pe_popToDevice(bool uninitialisedOnly) {
 }
 
-void pushsyn_i_popStateToDevice(bool uninitialisedOnly) {
-    pushgsyn_i_popToDevice(uninitialisedOnly);
-    pushinSynsyn_i_popToDevice(uninitialisedOnly);
+void pushsyn_pe_popStateToDevice(bool uninitialisedOnly) {
+    pushgsyn_pe_popToDevice(uninitialisedOnly);
+    pushetasyn_pe_popToDevice(uninitialisedOnly);
+    pushXpresyn_pe_popToDevice(uninitialisedOnly);
+    pushinSynsyn_pe_popToDevice(uninitialisedOnly);
 }
 
 
@@ -251,59 +251,59 @@ void pullpoisson_popCurrentSpikesFromDevice() {
 void pullpoisson_popSpikeTimesFromDevice() {
 }
 
+void pullratepoisson_popFromDevice() {
+}
+
 void pulltimeStepToSpikepoisson_popFromDevice() {
 }
 
-void pullfrequencypoisson_popFromDevice() {
-}
-
 void pullpoisson_popStateFromDevice() {
+    pullratepoisson_popFromDevice();
     pulltimeStepToSpikepoisson_popFromDevice();
-    pullfrequencypoisson_popFromDevice();
 }
 
-void pullsyn_e_popConnectivityFromDevice() {
+void pullsyn_ei_popConnectivityFromDevice() {
 }
 
-void pullginput_e_popFromDevice() {
+void pullgsyn_ei_popFromDevice() {
 }
 
-void pulletainput_e_popFromDevice() {
+void pullinSynsyn_ei_popFromDevice() {
 }
 
-void pullXpreinput_e_popFromDevice() {
+void pullsyn_ei_popStateFromDevice() {
+    pullgsyn_ei_popFromDevice();
+    pullinSynsyn_ei_popFromDevice();
 }
 
-void pullinSyninput_e_popFromDevice() {
+void pullgsyn_ie_popFromDevice() {
 }
 
-void pullinput_e_popStateFromDevice() {
-    pullginput_e_popFromDevice();
-    pulletainput_e_popFromDevice();
-    pullXpreinput_e_popFromDevice();
-    pullinSyninput_e_popFromDevice();
+void pullinSynsyn_ie_popFromDevice() {
 }
 
-void pullgsyn_e_popFromDevice() {
+void pullsyn_ie_popStateFromDevice() {
+    pullgsyn_ie_popFromDevice();
+    pullinSynsyn_ie_popFromDevice();
 }
 
-void pullinSynsyn_e_popFromDevice() {
+void pullgsyn_pe_popFromDevice() {
 }
 
-void pullsyn_e_popStateFromDevice() {
-    pullgsyn_e_popFromDevice();
-    pullinSynsyn_e_popFromDevice();
+void pulletasyn_pe_popFromDevice() {
 }
 
-void pullgsyn_i_popFromDevice() {
+void pullXpresyn_pe_popFromDevice() {
 }
 
-void pullinSynsyn_i_popFromDevice() {
+void pullinSynsyn_pe_popFromDevice() {
 }
 
-void pullsyn_i_popStateFromDevice() {
-    pullgsyn_i_popFromDevice();
-    pullinSynsyn_i_popFromDevice();
+void pullsyn_pe_popStateFromDevice() {
+    pullgsyn_pe_popFromDevice();
+    pulletasyn_pe_popFromDevice();
+    pullXpresyn_pe_popFromDevice();
+    pullinSynsyn_pe_popFromDevice();
 }
 
 
@@ -311,22 +311,22 @@ void copyStateToDevice(bool uninitialisedOnly) {
     pushlif_e_popStateToDevice(uninitialisedOnly);
     pushlif_i_popStateToDevice(uninitialisedOnly);
     pushpoisson_popStateToDevice(uninitialisedOnly);
-    pushinput_e_popStateToDevice(uninitialisedOnly);
-    pushsyn_e_popStateToDevice(uninitialisedOnly);
-    pushsyn_i_popStateToDevice(uninitialisedOnly);
+    pushsyn_ei_popStateToDevice(uninitialisedOnly);
+    pushsyn_ie_popStateToDevice(uninitialisedOnly);
+    pushsyn_pe_popStateToDevice(uninitialisedOnly);
 }
 
 void copyConnectivityToDevice(bool uninitialisedOnly) {
-    pushsyn_e_popConnectivityToDevice(uninitialisedOnly);
+    pushsyn_ei_popConnectivityToDevice(uninitialisedOnly);
 }
 
 void copyStateFromDevice() {
     pulllif_e_popStateFromDevice();
     pulllif_i_popStateFromDevice();
     pullpoisson_popStateFromDevice();
-    pullinput_e_popStateFromDevice();
-    pullsyn_e_popStateFromDevice();
-    pullsyn_i_popStateFromDevice();
+    pullsyn_ei_popStateFromDevice();
+    pullsyn_ie_popStateFromDevice();
+    pullsyn_pe_popStateFromDevice();
 }
 
 void copyCurrentSpikesFromDevice() {
@@ -368,30 +368,30 @@ void allocateMem() {
     glbSpkCntpoisson_pop = new unsigned int[1];
     glbSpkpoisson_pop = new unsigned int[784];
     sTpoisson_pop = new float[784];
+    ratepoisson_pop = new scalar[784];
     timeStepToSpikepoisson_pop = new scalar[784];
-    frequencypoisson_pop = new scalar[784];
     
     // ------------------------------------------------------------------------
     // postsynaptic variables
     // ------------------------------------------------------------------------
-    inSynsyn_i_pop = new float[100];
-    inSyninput_e_pop = new float[100];
-    inSynsyn_e_pop = new float[100];
+    inSynsyn_ie_pop = new float[100];
+    inSynsyn_pe_pop = new float[100];
+    inSynsyn_ei_pop = new float[100];
     
     // ------------------------------------------------------------------------
     // synapse connectivity
     // ------------------------------------------------------------------------
-    rowLengthsyn_e_pop = new unsigned int[100];
-    indsyn_e_pop = new unsigned int[100];
+    rowLengthsyn_ei_pop = new unsigned int[100];
+    indsyn_ei_pop = new unsigned int[100];
     
     // ------------------------------------------------------------------------
     // synapse variables
     // ------------------------------------------------------------------------
-    ginput_e_pop = new scalar[78400];
-    etainput_e_pop = new scalar[78400];
-    Xpreinput_e_pop = new scalar[784];
-    gsyn_e_pop = new scalar[100];
-    gsyn_i_pop = new scalar[10000];
+    gsyn_ei_pop = new scalar[100];
+    gsyn_ie_pop = new scalar[10000];
+    gsyn_pe_pop = new scalar[78400];
+    etasyn_pe_pop = new scalar[78400];
+    Xpresyn_pe_pop = new scalar[784];
     
 }
 
@@ -425,30 +425,30 @@ void freeMem() {
     delete[] glbSpkCntpoisson_pop;
     delete[] glbSpkpoisson_pop;
     delete[] sTpoisson_pop;
+    delete[] ratepoisson_pop;
     delete[] timeStepToSpikepoisson_pop;
-    delete[] frequencypoisson_pop;
     
     // ------------------------------------------------------------------------
     // postsynaptic variables
     // ------------------------------------------------------------------------
-    delete[] inSynsyn_i_pop;
-    delete[] inSyninput_e_pop;
-    delete[] inSynsyn_e_pop;
+    delete[] inSynsyn_ie_pop;
+    delete[] inSynsyn_pe_pop;
+    delete[] inSynsyn_ei_pop;
     
     // ------------------------------------------------------------------------
     // synapse connectivity
     // ------------------------------------------------------------------------
-    delete[] rowLengthsyn_e_pop;
-    delete[] indsyn_e_pop;
+    delete[] rowLengthsyn_ei_pop;
+    delete[] indsyn_ei_pop;
     
     // ------------------------------------------------------------------------
     // synapse variables
     // ------------------------------------------------------------------------
-    delete[] ginput_e_pop;
-    delete[] etainput_e_pop;
-    delete[] Xpreinput_e_pop;
-    delete[] gsyn_e_pop;
-    delete[] gsyn_i_pop;
+    delete[] gsyn_ei_pop;
+    delete[] gsyn_ie_pop;
+    delete[] gsyn_pe_pop;
+    delete[] etasyn_pe_pop;
+    delete[] Xpresyn_pe_pop;
     
 }
 

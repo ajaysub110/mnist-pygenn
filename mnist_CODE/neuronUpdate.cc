@@ -15,15 +15,11 @@ void updateNeurons(float t) {
             
             float Isyn = 0;
             // pull inSyn values in a coalesced access
-            float linSynsyn_i_pop = inSynsyn_i_pop[i];
-            
-            Isyn += linSynsyn_i_pop * ((1.00000000000000000e+02f) - lV);
-            
+            float linSynsyn_ie_pop = inSynsyn_ie_pop[i];
+            Isyn += linSynsyn_ie_pop * ((1.00000000000000000e+03f) - lV);
             // pull inSyn values in a coalesced access
-            float linSyninput_e_pop = inSyninput_e_pop[i];
-            
-            Isyn += linSyninput_e_pop * ((1.00000000000000000e+03f) - lV);
-            
+            float linSynsyn_pe_pop = inSynsyn_pe_pop[i];
+            Isyn += linSynsyn_pe_pop * ((1.00000000000000000e+03f) - lV);
             // test whether spike condition was fulfilled previously
             const bool oldSpike= (lRefracTime <= 0.0f && lV >= (-5.20000000000000000e+01f) + ltheta);
             // calculate membrane potential
@@ -48,7 +44,7 @@ void updateNeurons(float t) {
                 lV = (-6.50000000000000000e+01f);
                 lRefracTime = (5.00000000000000000e+00f);
                 lSpikeNumber += 1;
-                ltheta += 1;
+                ltheta += 1.0f;
                 
             }
             Vlif_e_pop[i] = lV;
@@ -56,15 +52,11 @@ void updateNeurons(float t) {
             thetalif_e_pop[i] = ltheta;
             SpikeNumberlif_e_pop[i] = lSpikeNumber;
             // the post-synaptic dynamics
-            
-            linSynsyn_i_pop *= (6.06530659712633424e-01f);
-            
-            inSynsyn_i_pop[i] = linSynsyn_i_pop;
+            linSynsyn_ie_pop*=(3.67879441171442334e-01f);
+            inSynsyn_ie_pop[i] = linSynsyn_ie_pop;
             // the post-synaptic dynamics
-            
-            linSyninput_e_pop *= (3.67879441171442334e-01f);
-            
-            inSyninput_e_pop[i] = linSyninput_e_pop;
+            linSynsyn_pe_pop*=(3.67879441171442334e-01f);
+            inSynsyn_pe_pop[i] = linSynsyn_pe_pop;
         }
     }
     // neuron group lif_i_pop
@@ -78,10 +70,8 @@ void updateNeurons(float t) {
             
             float Isyn = 0;
             // pull inSyn values in a coalesced access
-            float linSynsyn_e_pop = inSynsyn_e_pop[i];
-            
-            Isyn += linSynsyn_e_pop * ((1.00000000000000000e+03f) - lV);
-            
+            float linSynsyn_ei_pop = inSynsyn_ei_pop[i];
+            Isyn += linSynsyn_ei_pop * ((1.00000000000000000e+02f) - lV);
             // test whether spike condition was fulfilled previously
             const bool oldSpike= (lRefracTime <= 0.0f && lV >= (-4.00000000000000000e+01f));
             // calculate membrane potential
@@ -110,10 +100,8 @@ void updateNeurons(float t) {
             RefracTimelif_i_pop[i] = lRefracTime;
             SpikeNumberlif_i_pop[i] = lSpikeNumber;
             // the post-synaptic dynamics
-            
-            linSynsyn_e_pop *= (3.67879441171442334e-01f);
-            
-            inSynsyn_e_pop[i] = linSynsyn_e_pop;
+            linSynsyn_ei_pop*=(6.06530659712633424e-01f);
+            inSynsyn_ei_pop[i] = linSynsyn_ei_pop;
         }
     }
     // neuron group poisson_pop
@@ -121,17 +109,17 @@ void updateNeurons(float t) {
         glbSpkCntpoisson_pop[0] = 0;
         
         for(unsigned int i = 0; i < 784; i++) {
+            scalar lrate = ratepoisson_pop[i];
             scalar ltimeStepToSpike = timeStepToSpikepoisson_pop[i];
-            scalar lfrequency = frequencypoisson_pop[i];
             float lsT = sTpoisson_pop[i];
             
             // test whether spike condition was fulfilled previously
             const bool oldSpike= (ltimeStepToSpike <= 0.0f);
             // calculate membrane potential
             
-            if(ltimeStepToSpike <= 0.0f) 
-            {
-                ltimeStepToSpike += 1.0f / lfrequency;
+            const scalar isi = 1000.0f / lrate;
+            if (ltimeStepToSpike <= 0.0f) {
+                ltimeStepToSpike += isi * standardExponentialDistribution(rng);
             }
             ltimeStepToSpike -= 1.0f;
             
@@ -140,19 +128,19 @@ void updateNeurons(float t) {
                 glbSpkpoisson_pop[glbSpkCntpoisson_pop[0]++] = i;
                 sTpoisson_pop[i] = t;
                  {
-                    // perform presynaptic update required for input_e_pop
-                    scalar lXpre = Xpreinput_e_pop[i];
+                    // perform presynaptic update required for syn_pe_pop
+                    scalar lXpre = Xpresyn_pe_pop[i];
                     
                     const scalar dt = t - (sTpoisson_pop[i]);
                     if(dt > 0) {
                         const scalar expXpre = expf(-dt / (2.00000000000000000e+01f));
-                        lXpre = (lXpre * expf(-dt / (2.00000000000000000e+01f))) + 1.0f;
+                        lXpre = expXpre + 1.0f;
                     }
-                    Xpreinput_e_pop[i] = lXpre;
+                    Xpresyn_pe_pop[i] = lXpre;
                 }
             }
+            ratepoisson_pop[i] = lrate;
             timeStepToSpikepoisson_pop[i] = ltimeStepToSpike;
-            frequencypoisson_pop[i] = lfrequency;
         }
     }
 }

@@ -28,7 +28,8 @@ void initialize() {
         }
          {
             for (unsigned i = 0; i < 100; i++) {
-                Vlif_e_pop[i] = (-6.50000000000000000e+01f);
+                const scalar scale = (-5.20000000000000000e+01f) - (-6.50000000000000000e+01f);
+                Vlif_e_pop[i] = (-6.50000000000000000e+01f) + (standardUniformDistribution(rng) * scale);
             }
         }
          {
@@ -47,10 +48,10 @@ void initialize() {
             }
         }
         for (unsigned i = 0; i < 100; i++) {
-            inSynsyn_i_pop[i] = 0.000000f;
+            inSynsyn_ie_pop[i] = 0.000000f;
         }
         for (unsigned i = 0; i < 100; i++) {
-            inSyninput_e_pop[i] = 0.000000f;
+            inSynsyn_pe_pop[i] = 0.000000f;
         }
         // current source variables
     }
@@ -62,7 +63,8 @@ void initialize() {
         }
          {
             for (unsigned i = 0; i < 100; i++) {
-                Vlif_i_pop[i] = (-4.50000000000000000e+01f);
+                const scalar scale = (-4.00000000000000000e+01f) - (-4.50000000000000000e+01f);
+                Vlif_i_pop[i] = (-4.50000000000000000e+01f) + (standardUniformDistribution(rng) * scale);
             }
         }
          {
@@ -76,7 +78,7 @@ void initialize() {
             }
         }
         for (unsigned i = 0; i < 100; i++) {
-            inSynsyn_e_pop[i] = 0.000000f;
+            inSynsyn_ei_pop[i] = 0.000000f;
         }
         // current source variables
     }
@@ -91,58 +93,57 @@ void initialize() {
         }
          {
             for (unsigned i = 0; i < 784; i++) {
+                ratepoisson_pop[i] = (1.00000000000000000e+02f);
+            }
+        }
+         {
+            for (unsigned i = 0; i < 784; i++) {
                 timeStepToSpikepoisson_pop[i] = (0.00000000000000000e+00f);
             }
         }
          {
             for (unsigned i = 0; i < 784; i++) {
-                frequencypoisson_pop[i] = (0.00000000000000000e+00f);
-            }
-        }
-         {
-            for (unsigned i = 0; i < 784; i++) {
-                Xpreinput_e_pop[i] = (0.00000000000000000e+00f);
+                Xpresyn_pe_pop[i] = (0.00000000000000000e+00f);
             }
         }
         // current source variables
     }
     // ------------------------------------------------------------------------
     // Synapse groups with dense connectivity
-    // synapse group input_e_pop
-     {
-        for(unsigned int i = 0; i < 784; i++) {
-             {
-                for (unsigned j = 0; j < 100; j++) {
-                    const scalar scale = (1.00000000000000000e+01f) - (0.00000000000000000e+00f);
-                    ginput_e_pop[(i * 100) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
-                }
-            }
-             {
-                for (unsigned j = 0; j < 100; j++) {
-                    etainput_e_pop[(i * 100) + j] = (1.00000000000000002e-03f);
-                }
-            }
-        }
-    }
-    // synapse group syn_i_pop
+    // synapse group syn_ie_pop
      {
         for(unsigned int i = 0; i < 100; i++) {
              {
                 for (unsigned j = 0; j < 100; j++) {
-                    const scalar scale = (-1.00000000000000000e+01f) - (0.00000000000000000e+00f);
-                    gsyn_i_pop[(i * 100) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
+                    gsyn_ie_pop[(i * 100) + j]=(i==j) ? 0.0f : (1.00000000000000006e-01f);
+                }
+            }
+        }
+    }
+    // synapse group syn_pe_pop
+     {
+        for(unsigned int i = 0; i < 784; i++) {
+             {
+                for (unsigned j = 0; j < 100; j++) {
+                    const scalar scale = (1.00000000000000000e+00f) - (0.00000000000000000e+00f);
+                    gsyn_pe_pop[(i * 100) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
+                }
+            }
+             {
+                for (unsigned j = 0; j < 100; j++) {
+                    etasyn_pe_pop[(i * 100) + j] = (1.00000000000000006e-01f);
                 }
             }
         }
     }
     // ------------------------------------------------------------------------
     // Synapse groups with sparse connectivity
-    // synapse group syn_e_pop
-    memset(rowLengthsyn_e_pop, 0, 100 * sizeof(unsigned int));
+    // synapse group syn_ei_pop
+    memset(rowLengthsyn_ei_pop, 0, 100 * sizeof(unsigned int));
     for (unsigned int i = 0; i < 100; i++) {
         // Build sparse connectivity
         while(true) {
-            indsyn_e_pop[(i * 1) + (rowLengthsyn_e_pop[i]++)] = i;
+            indsyn_ei_pop[(i * 1) + (rowLengthsyn_ei_pop[i]++)] = i;
             break;
             
         }
@@ -157,9 +158,9 @@ void initializeSparse() {
         for (unsigned int i = 0; i < 100; i++)
          {
              {
-                for (unsigned j = 0; j < rowLengthsyn_e_pop[i]; j++) {
-                    const scalar scale = (1.00000000000000000e+01f) - (0.00000000000000000e+00f);
-                    gsyn_e_pop[(i * 1) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
+                for (unsigned j = 0; j < rowLengthsyn_ei_pop[i]; j++) {
+                    const scalar scale = (1.00000000000000000e+00f) - (0.00000000000000000e+00f);
+                    gsyn_ei_pop[(i * 1) + j] = (0.00000000000000000e+00f) + (standardUniformDistribution(rng) * scale);
                 }
             }
         }

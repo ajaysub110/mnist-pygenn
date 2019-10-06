@@ -78,31 +78,31 @@ EXPORT_VAR unsigned int* SpikeNumberlif_i_pop;
 EXPORT_VAR unsigned int* glbSpkCntpoisson_pop;
 EXPORT_VAR unsigned int* glbSpkpoisson_pop;
 EXPORT_VAR float* sTpoisson_pop;
+EXPORT_VAR scalar* ratepoisson_pop;
 EXPORT_VAR scalar* timeStepToSpikepoisson_pop;
-EXPORT_VAR scalar* frequencypoisson_pop;
 
 // ------------------------------------------------------------------------
 // postsynaptic variables
 // ------------------------------------------------------------------------
-EXPORT_VAR float* inSynsyn_i_pop;
-EXPORT_VAR float* inSyninput_e_pop;
-EXPORT_VAR float* inSynsyn_e_pop;
+EXPORT_VAR float* inSynsyn_ie_pop;
+EXPORT_VAR float* inSynsyn_pe_pop;
+EXPORT_VAR float* inSynsyn_ei_pop;
 
 // ------------------------------------------------------------------------
 // synapse connectivity
 // ------------------------------------------------------------------------
-EXPORT_VAR const unsigned int maxRowLengthsyn_e_pop;
-EXPORT_VAR unsigned int* rowLengthsyn_e_pop;
-EXPORT_VAR unsigned int* indsyn_e_pop;
+EXPORT_VAR const unsigned int maxRowLengthsyn_ei_pop;
+EXPORT_VAR unsigned int* rowLengthsyn_ei_pop;
+EXPORT_VAR unsigned int* indsyn_ei_pop;
 
 // ------------------------------------------------------------------------
 // synapse variables
 // ------------------------------------------------------------------------
-EXPORT_VAR scalar* ginput_e_pop;
-EXPORT_VAR scalar* etainput_e_pop;
-EXPORT_VAR scalar* Xpreinput_e_pop;
-EXPORT_VAR scalar* gsyn_e_pop;
-EXPORT_VAR scalar* gsyn_i_pop;
+EXPORT_VAR scalar* gsyn_ei_pop;
+EXPORT_VAR scalar* gsyn_ie_pop;
+EXPORT_VAR scalar* gsyn_pe_pop;
+EXPORT_VAR scalar* etasyn_pe_pop;
+EXPORT_VAR scalar* Xpresyn_pe_pop;
 
 EXPORT_FUNC void pushlif_e_popSpikesToDevice(bool uninitialisedOnly = false);
 EXPORT_FUNC void pulllif_e_popSpikesFromDevice();
@@ -138,36 +138,36 @@ EXPORT_FUNC void pushpoisson_popCurrentSpikesToDevice(bool uninitialisedOnly = f
 EXPORT_FUNC void pullpoisson_popCurrentSpikesFromDevice();
 EXPORT_FUNC void pushpoisson_popSpikeTimesToDevice(bool uninitialisedOnly = false);
 EXPORT_FUNC void pullpoisson_popSpikeTimesFromDevice();
+EXPORT_FUNC void pushratepoisson_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullratepoisson_popFromDevice();
 EXPORT_FUNC void pushtimeStepToSpikepoisson_popToDevice(bool uninitialisedOnly = false);
 EXPORT_FUNC void pulltimeStepToSpikepoisson_popFromDevice();
-EXPORT_FUNC void pushfrequencypoisson_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullfrequencypoisson_popFromDevice();
 EXPORT_FUNC void pushpoisson_popStateToDevice(bool uninitialisedOnly = false);
 EXPORT_FUNC void pullpoisson_popStateFromDevice();
-EXPORT_FUNC void pushsyn_e_popConnectivityToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullsyn_e_popConnectivityFromDevice();
-EXPORT_FUNC void pushginput_e_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullginput_e_popFromDevice();
-EXPORT_FUNC void pushetainput_e_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pulletainput_e_popFromDevice();
-EXPORT_FUNC void pushXpreinput_e_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullXpreinput_e_popFromDevice();
-EXPORT_FUNC void pushinSyninput_e_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullinSyninput_e_popFromDevice();
-EXPORT_FUNC void pushinput_e_popStateToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullinput_e_popStateFromDevice();
-EXPORT_FUNC void pushgsyn_e_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullgsyn_e_popFromDevice();
-EXPORT_FUNC void pushinSynsyn_e_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullinSynsyn_e_popFromDevice();
-EXPORT_FUNC void pushsyn_e_popStateToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullsyn_e_popStateFromDevice();
-EXPORT_FUNC void pushgsyn_i_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullgsyn_i_popFromDevice();
-EXPORT_FUNC void pushinSynsyn_i_popToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullinSynsyn_i_popFromDevice();
-EXPORT_FUNC void pushsyn_i_popStateToDevice(bool uninitialisedOnly = false);
-EXPORT_FUNC void pullsyn_i_popStateFromDevice();
+EXPORT_FUNC void pushsyn_ei_popConnectivityToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullsyn_ei_popConnectivityFromDevice();
+EXPORT_FUNC void pushgsyn_ei_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullgsyn_ei_popFromDevice();
+EXPORT_FUNC void pushinSynsyn_ei_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullinSynsyn_ei_popFromDevice();
+EXPORT_FUNC void pushsyn_ei_popStateToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullsyn_ei_popStateFromDevice();
+EXPORT_FUNC void pushgsyn_ie_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullgsyn_ie_popFromDevice();
+EXPORT_FUNC void pushinSynsyn_ie_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullinSynsyn_ie_popFromDevice();
+EXPORT_FUNC void pushsyn_ie_popStateToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullsyn_ie_popStateFromDevice();
+EXPORT_FUNC void pushgsyn_pe_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullgsyn_pe_popFromDevice();
+EXPORT_FUNC void pushetasyn_pe_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pulletasyn_pe_popFromDevice();
+EXPORT_FUNC void pushXpresyn_pe_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullXpresyn_pe_popFromDevice();
+EXPORT_FUNC void pushinSynsyn_pe_popToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullinSynsyn_pe_popFromDevice();
+EXPORT_FUNC void pushsyn_pe_popStateToDevice(bool uninitialisedOnly = false);
+EXPORT_FUNC void pullsyn_pe_popStateFromDevice();
 // Runner functions
 EXPORT_FUNC void copyStateToDevice(bool uninitialisedOnly = false);
 EXPORT_FUNC void copyConnectivityToDevice(bool uninitialisedOnly = false);
